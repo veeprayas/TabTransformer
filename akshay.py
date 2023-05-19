@@ -12,6 +12,9 @@ import warnings
 import tensorflow_addons as tfa
 import matplotlib.pyplot as plt
 import seaborn as sns
+from tensorflow.keras.utils import plot_model
+
+
 #ignore warnings
 warnings.filterwarnings("ignore")
 
@@ -50,7 +53,7 @@ TARGET_LABELS = ["ActiveSurveillance","BrachyTherapy","CP",
 "ProtonBeam",
 "RP"
 ]
-
+NUM_CLASSES = len(TARGET_LABELS)
 CATEGORICAL_FEATURES_WITH_VOCABULARY = {
     "priorbxresult":sorted(list(train["priorbxresult"].unique())),
     "clinstaget": sorted(list(train["clinstaget"].unique())),
@@ -93,7 +96,7 @@ LEARNING_RATE = 0.001
 WEIGHT_DECAY = 0.0001
 DROPOUT_RATE = 0.2
 BATCH_SIZE = 128
-NUM_EPOCHS = 250
+NUM_EPOCHS = 25
 NUM_TRANSFORMER_BLOCKS = 3
 NUM_HEADS = 4
 EMBEDDING_DIMS = 16
@@ -141,8 +144,8 @@ def run_experiment(
 
     model.compile(
         optimizer=optimizer,
-        loss=keras.losses.BinaryCrossentropy(),
-        metrics=[keras.metrics.BinaryAccuracy(name="accuracy")],
+        loss=keras.losses.SparseCategoricalCrossentropy(),
+        metrics=[keras.metrics.SparseCategoricalAccuracy()],
     )
 
     train_dataset = get_dataset_from_csv(train_data_file, batch_size, shuffle=True)
@@ -302,8 +305,8 @@ def create_tabtransformer_classifier(
         name="MLP",
     )(features)
 
-    # Add a sigmoid as a binary classifer.
-    outputs = layers.Dense(units=1, activation="sigmoid", name="sigmoid")(features)
+
+    outputs = layers.Dense(units=NUM_CLASSES, activation="softmax")(features)
     model = keras.Model(inputs=inputs, outputs=outputs)
     return model
 
