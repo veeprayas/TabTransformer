@@ -23,7 +23,7 @@ anony = "must"
 print('https://wandb.ai/authorize')
 CONFIG = dict(competition='TabTransformer', _wandb_kernel='tensorgirl')
 
-train = pd.read_csv('AKKI_MAINB.csv')
+train = pd.read_csv('DSWithGradeGroup.csv')
 
 print(train.head())
 
@@ -32,24 +32,20 @@ all_features = [
     "clinstaget",
     "clinstagen",
     "clinstagem",
+    "grade",
     "prepsa",
-    "cgg1",
-    "cgg2",
     "procname"
     ]
 
 NUMERIC_FEATURE_NAMES = [
     "prepsa",
-    "cgg1",
-    "cgg2",
+    "grade",
     ]
 
 TARGET_FEATURE_NAME  = "procname"
-TARGET_LABELS = ["ActiveSurveillance","BrachyTherapy","CP",
-"Cyberknife",
+TARGET_LABELS = ["ActiveSurveillance","BrachyTherapy",
 "DVP",
-"ExternalIMRT",
-"LRP",
+"ExternalBeam",
 "ProtonBeam",
 "RP"
 ]
@@ -94,7 +90,7 @@ wandb.finish()
 
 LEARNING_RATE = 0.001
 WEIGHT_DECAY = 0.0001
-DROPOUT_RATE = 0.2
+DROPOUT_RATE = 0.1
 BATCH_SIZE = 128
 NUM_EPOCHS = 25
 NUM_TRANSFORMER_BLOCKS = 3
@@ -125,7 +121,6 @@ target_label_lookup = layers.StringLookup(
 
 def prepare_example(features, target):
     target_index = target_label_lookup(target)
-
     return features, target_index
 
 def run_experiment(
@@ -330,3 +325,79 @@ history = run_experiment(
     weight_decay=WEIGHT_DECAY,
     batch_size=BATCH_SIZE,
 )
+
+# def create_baseline_model(
+#     embedding_dims, num_mlp_blocks, mlp_hidden_units_factors, dropout_rate
+# ):
+#
+#     # Create model inputs.
+#     inputs = create_model_inputs()
+#     # encode features.
+#     encoded_categorical_feature_list, numerical_feature_list = encode_inputs(
+#         inputs, embedding_dims
+#     )
+#     # Concatenate all features.
+#     features = layers.concatenate(
+#         encoded_categorical_feature_list + numerical_feature_list
+#     )
+#     # Compute Feedforward layer units.
+#     feedforward_units = [features.shape[-1]]
+#
+#     # Create several feedforwad layers with skip connections.
+#     for layer_idx in range(num_mlp_blocks):
+#         features = create_mlp(
+#             hidden_units=feedforward_units,
+#             dropout_rate=dropout_rate,
+#             activation=keras.activations.gelu,
+#             normalization_layer=layers.LayerNormalization(epsilon=1e-6),
+#             name=f"feedforward_{layer_idx}",
+#         )(features)
+#         # Compute MLP hidden_units.
+#         mlp_hidden_units = [
+#             factor * features.shape[-1] for factor in mlp_hidden_units_factors
+#         ]
+#         # Create final MLP.
+#         features = create_mlp(
+#             hidden_units=mlp_hidden_units,
+#             dropout_rate=dropout_rate,
+#             activation=keras.activations.selu,
+#             normalization_layer=layers.BatchNormalization(),
+#             name="MLP",
+#         )(features)
+#
+#         # Add a sigmoid as a binary classifer.
+#         outputs = layers.Dense(units=NUM_CLASSES, activation="softmax")(features)
+#         model1 = keras.Model(inputs=inputs, outputs=outputs)
+#         return model1
+#
+# baseline_model = create_baseline_model(
+#     embedding_dims=EMBEDDING_DIMS,
+#     num_mlp_blocks=NUM_MLP_BLOCKS,
+#     mlp_hidden_units_factors=MLP_HIDDEN_UNITS_FACTORS,
+#     dropout_rate=DROPOUT_RATE,
+# )
+#
+# print("Total model weights:", baseline_model.count_params())
+#
+# history = run_experiment(
+#     model=baseline_model,
+#     train_data_file=train_data_file,
+#     test_data_file=test_data_file,
+#     num_epochs=NUM_EPOCHS,
+#     learning_rate=LEARNING_RATE,
+#     weight_decay=WEIGHT_DECAY,
+#     batch_size=BATCH_SIZE,
+# )
+#model = keras.models.load_model("best_model.h5")
+sample = {
+    "priorbxresult": "MOD",
+    "clinstaget": "T1c",
+    "clinstagen": "NX",
+    "clinstagem": "MX",
+    "grade": 1,
+    "prepsa": 0.62,
+}
+
+input_dict = {name: tf.convert_to_tensor([value]) for name, value in sample.items()}
+predictions = tabtransformer_model.predict(input_dict)
+print(predictions)
